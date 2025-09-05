@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+	tools {
+		jdk 'jdk11'
+	}
+
+//	environment {
+//		M2_INSTALL = "/usr/bin/mvn"
+//	}
+
+	environment {
+       DOCKER_HUB_PWD = credentials('DOCKER_HUB_PWD')
+    }
+
+    stages {
+        stage('Clone-Repo') {
+	    	steps {
+	        	checkout scm
+	    	}
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn install -Dmaven.test.skip=true'
+            }
+        }
+		
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn compiler:testCompile'
+                sh 'mvn surefire:test'
+                junit 'target/**/*.xml'
+            }
+        }
+
+		stage('Build Images') {
+			steps {
+				sh 'docker build -t "nageshvkn/gamutkart-img" .'
+			}
+		}
+
+		stage('Image Push') {
+			steps {
+				sh 'docker login -u nageshvkn -p $DOCKER_HUB_PWD'
+				sh 'docker push nageshvkn/gamutkart-img'
+			}
+		}
+
+        stage('Cluster Connect') {
+           steps {
+				sh 'gcloud container clusters get-credentials gamutkart-cluster --region us-central1 --project airy-passkey-429115-g4'
+           }
+        }
+		
+		stage('K8S Deployment') {
+			steps {
+				script {
+					echo "Jenkins is able to connect to the cluster and starting image Deployment.. "
+					sh 'kubectl apply -f /home/parallels/Projects/gamutkart/deployment.yaml'
+					sh 'kubectl apply -f /home/parallels/Projects/gamutkart/service.yaml'
+				}
+			}
+		}
+
+    }
+}
