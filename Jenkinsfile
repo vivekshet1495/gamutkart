@@ -1,39 +1,30 @@
-pipeline {
+pipeline{
     agent any
-
-	tools {
-		jdk 'jdk17'
-	}
-
-//	environment {
-//		M2_INSTALL = "/usr/bin/mvn"
-//	}
-
-    stages {
-        stage('Clone-Repo') {
-	    	steps {
-	        	checkout scm
-	    	}
+    tools{
+        maven 'maven'
+    }
+    stages{
+        stage("clone"){
+            steps{
+            git changelog: false, poll: false, url: 'https://github.com/vivekshet1495/gamutkart.git'
+            }
         }
-
-        stage('Build') {
-            steps {
+        stage("build-repo"){
+            steps{
                 sh 'mvn install -D maven.test.skip=true'
             }
         }
-		
-        stage('Unit Tests') {
-            steps {
+        stage("build-test-ready"){
+            steps{
                 sh 'mvn compiler:testCompile'
                 sh 'mvn surefire:test'
                 junit 'target/**/*.xml'
             }
         }
-
-        stage('Deployment') {
-            steps {
-                sh 'sshpass -p "1234" scp target/gamutkart.war wiculty@172.17.0.2:/home/wiculty/Distros/apache-tomcat-10.1.41/webapps'
-                sh 'sshpass -p "1234" ssh wiculty@172.17.0.2 "/home/wiculty/Distros/apache-tomcat-10.1.41/bin/startup.sh"'
+        stage("deployment"){
+            steps{
+            sh '''scp target/gamutkart.war vivek@13.127.159.105:/home/vivek/tomcat/webapps/
+ssh vivek@13.127.159.105 "tomcat/bin/startup.sh"'''
             }
         }
     }
