@@ -2,7 +2,7 @@ pipeline {
     agent any
 
 	tools {
-		jdk 'jdk11'
+		jdk 'jdk17'
 	}
 
 //	environment {
@@ -18,7 +18,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn install -Dmaven.test.skip=true'
+                sh 'mvn install -D maven.test.skip=true'
             }
         }
 		
