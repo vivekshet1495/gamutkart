@@ -14,17 +14,23 @@ pipeline{
                 sh 'mvn install -D maven.test.skip=true'
             }
         }
-        stage("build-test-ready"){
+        stage("build-test"){
             steps{
                 sh 'mvn compiler:testCompile'
+            }
+        }
+        stage("Test-Result"){
+            steps{
                 sh 'mvn surefire:test'
                 junit 'target/**/*.xml'
             }
         }
         stage("deployment"){
             steps{
-            sh '''scp target/gamutkart.war vivek@13.127.159.105:/home/vivek/tomcat/webapps/
-ssh vivek@13.127.159.105 "tomcat/bin/startup.sh"'''
+                sh 'touch /var/lib/jenkins/.ssh/known_hosts'
+                sh 'ssh-keyscan -H 13.127.159.105 >> /var/lib/jenkins/.ssh/known_hosts'
+                sh 'scp -r target/gamutkart.war vivek@13.127.159.105:/home/vivek/tomcat/webapps/'
+                sh 'ssh vivek@13.127.159.105 "tomcat/bin/startup.sh"'
             }
         }
     }
